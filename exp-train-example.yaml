@@ -1,0 +1,51 @@
+arch:
+  name: resnet100
+  param:
+    num_embedding: 512
+    version_act: prelu
+    version_se: 1
+    bn_mom: 0.9
+  embedding_block:
+    name: embeddingE
+    param:
+      inplanes: 512
+      input_size: 25088
+      num_embedding: 512
+      dp: 0.4
+  classifier_block:
+    name: Linear
+loss:
+  name: angularloss
+  param:
+    margin_a: 1
+    margin_m: 0
+    margin_b: 0
+    scale: 64
+optimizer:
+  name: SGD
+  param:
+    lr: 0.01
+    momentum: 0.9
+    weight_decay: 0.0005
+lr_scheduler:
+  name: StepLR
+  param:
+    step_size: 10
+    gamma: 0.1
+verification:
+  dataset: [/workspace/datasets/lfw.bin,
+            /workspace/datasets/cfp_fp.bin,
+            /workspace/datasets/agedb_30.bin]
+megaface_evaluation:
+  megaface_lmdb_path: /workspace/datasets/megaface/_megaface_112x112_100000.lmdb
+  facescrub_lmdb_path: /workspace/datasets/megaface/_facescrub_112x112.lmdb
+  dump_dir: /workspace/output
+  size: 10000
+data:
+  path: /workspace/datasets/msceleb_1m-refine-v2.lmdb
+  batch_size: 256
+  data_type: lmdb
+epochs: 20
+log_interval: 10
+checkpoint_dir: /workspace/ckp-exp
+log_dir: /workspace/tb-exp
