@@ -1,0 +1,75 @@
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    uid: &userns dc2e6146-f83b-11e8-b4ca-00224049c0e7
+  name:  &jobname faceflamingo
+  namespace: *userns
+spec:
+  backoffLimit: 0
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        uid: *userns
+      namespace: *userns
+    spec:
+      containers:
+      - command:
+        - bash
+        - -xec
+        - |
+          python train_face.py  \
+          exp_pod.yaml | unbuffer -p tee log
+        image: # docker image (to be filled)
+        imagePullPolicy: IfNotPresent
+        name: *jobname
+        ports:
+        - containerPort: 8888
+          name: jupyter
+          protocol: TCP
+        - containerPort: 6006
+          name: tensorboard
+          protocol: TCP
+        - containerPort: 10010
+          name: distribute
+          protocol: TCP
+        resources:
+          limits:
+            # cpu: "3"
+            # memory: 8Gi
+            nvidia.com/gpu: "8"
+          requests:
+            cpu: "3"
+            memory: 8Gi
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /mnt
+          name: nfs
+        - mountPath: /etc/pip.conf
+          name: pip
+          subPath: pip.conf
+        - name: shm
+          mountPath: /dev/shm
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+      - name: hubkey
+      nodeSelector:
+        accelerator: nvidia-1080-ti
+      restartPolicy: Never
+      volumes:
+      - name: nfs
+        persistentVolumeClaim:
+          claimName: dc2e6146-f83b-11e8-b4ca-00224049c0e7-pvc
+      - configMap:
+          defaultMode: 420
+          items:
+          - key: pip.conf
+            path: pip.conf
+          name: pip-conf
+        name: pip
+      - name: shm
+        emptyDir:
+          medium: Memory

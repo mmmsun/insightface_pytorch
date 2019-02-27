@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    uid: &userns dc2e6146-f83b-11e8-b4ca-00224049c0e7
+    uniquename: &unique faceflamingotb
+  name: *unique
+  namespace: *userns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      uid: *userns
+      uniquename: *unique
+  template:
+    metadata:
+      labels:
+        uid: *userns
+        uniquename: *unique
+      namespace: *userns
+    spec:
+      nodeSelector:
+        accelerator: nvidia-1080-ti
+      containers:
+      - command:
+        - tensorboard
+        - --logdir
+        - tb-exp
+        image: tensorflow:latest
+        imagePullPolicy: IfNotPresent
+        name: *unique
+        ports:
+        - containerPort: 6006
+          name: tensorboard
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "1"
+            memory: 1Gi
+          requests:
+            cpu: "1"
+            memory: 1Gi
+        volumeMounts:
+        - mountPath: /mnt
+          name: nfs
+      imagePullSecrets:
+      - name: hubkey
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: nfs
+        persistentVolumeClaim:
+          claimName: dc2e6146-f83b-11e8-b4ca-00224049c0e7-pvc
+
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    uid: &userns dc2e6146-f83b-11e8-b4ca-00224049c0e7
+    uniquename: &unique faceflamingotb
+  name: *unique
+  namespace: *userns
+spec:
+  ports:
+  - name: tensorboard
+    port: 8081
+    protocol: TCP
+    targetPort: 6006
+  selector:
+    uid: *userns
+    uniquename: *unique
+  sessionAffinity: None
+  type: ClusterIP
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  labels:
+    uid: &userns dc2e6146-f83b-11e8-b4ca-00224049c0e7
+    uniquename: &unique faceflamingotb
+  name: *unique
+  namespace: *userns
+spec:
+  rules:
+  - http:
+      paths:
+      - backend:
+          serviceName: *unique
+          servicePort: 8081
+        path: /faceflamingotb/tensorboard

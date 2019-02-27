@@ -1,0 +1,9 @@
+*.pth
+.vscode
+.DS_Store
+.pytest_cache
+__pycache__
+*.tar.gz
+*.tar
+*.tgz
+*.txt
